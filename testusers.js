@@ -7,9 +7,9 @@ async function usertest() {
     values(?,?,?,?,?)
     `,
     [
-      "shivam5",
-      "example5@gmail.com",
-      "hash5",
+      "shivam8",
+      "example8@gmail.com",
+      "hash8",
       1,
       1
     ]
@@ -27,7 +27,7 @@ async function reviewtest(){
     values(?,?)
     `,
     [
-      1,
+      4,
       "open"
     ]
   );
@@ -36,3 +36,22 @@ async function reviewtest(){
 }
 
 reviewtest();
+
+async function revisiontest(){
+  await db.run(
+    `
+    insert into revision(revision_id, review_session_id, revision_number,code_snapshot)
+    values(?,?,?,?)
+    `,
+    [
+      1,
+      1,
+      1,
+      "print(hello)"
+    ]
+  );
+  const revision = await db.all("select * from revision")
+  console.log(revision);
+}
+
+revisiontest();

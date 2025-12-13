@@ -34,3 +34,21 @@ async function reviewinit() {
 }
 
 reviewinit();
+
+async function revision(){
+  await db.exec(
+    `
+    create table if not exists revision(
+    revision_id integer primary key autoincrement,
+    review_session_id integer not null,
+    revision_number integer not null,
+    code_snapshot text not null,
+    created_at datetime not null default current_timestamp,
+    foreign key(review_session_id) references review_session(session_id)
+    unique(review_session_id, revision_number)
+    );
+    `
+  );
+}
+
+revision();
