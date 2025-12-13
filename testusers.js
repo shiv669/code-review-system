@@ -7,9 +7,9 @@ async function usertest() {
     values(?,?,?,?,?)
     `,
     [
-      "shivam8",
-      "example8@gmail.com",
-      "hash8",
+      "shivam01",
+      "example01@gmail.com",
+      "hash01",
       1,
       1
     ]
@@ -27,7 +27,7 @@ async function reviewtest(){
     values(?,?)
     `,
     [
-      4,
+      7,
       "open"
     ]
   );
@@ -44,9 +44,9 @@ async function revisiontest(){
     values(?,?,?,?)
     `,
     [
-      1,
-      1,
-      1,
+      3,
+      3,
+      3,
       "print(hello)"
     ]
   );
@@ -55,3 +55,21 @@ async function revisiontest(){
 }
 
 revisiontest();
+
+async function commenttest(){
+  await db.run(
+    `
+    insert into comments(revision_id_no, user_id, content)
+    values(?,?,?)
+    `,
+    [
+      2,
+      2,
+      "its easy bro"
+    ]
+  );
+  const comment = await db.all("select * from comments")
+  console.log(comment);
+}
+
+commenttest();

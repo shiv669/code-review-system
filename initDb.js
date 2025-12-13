@@ -52,3 +52,22 @@ async function revision(){
 }
 
 revision();
+
+async function comments(){
+  await db.exec(
+    `
+    create table comments(
+    id integer primary key autoincrement,
+    revision_id_no integer not null,
+    user_id integer not null,
+    line_number integer,
+    content text not null,
+    created_at datetime not null default current_timestamp,
+    foreign key(revision_id_no) references revision(revision_id),
+    foreign key(user_id) references user(id)
+    );
+    `
+  );
+}
+
+comments();
