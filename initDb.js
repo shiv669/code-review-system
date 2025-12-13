@@ -1,0 +1,18 @@
+import { db } from "./db.js";
+
+async function init(){
+  await db.exec(`
+    create table if not exists users (
+    id integer primary key autoincrement,
+    username text not null unique,
+    email text not null unique,
+    password_hash text not null,
+    is_author boolean not null default 0,
+    is_reviewer boolean not null default 0,
+    created_at datetime not null default current_timestamp
+    );
+  `);
+  console.log("user table created");
+}
+
+init();
