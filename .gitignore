@@ -134,3 +134,4 @@ dist
 
 node_modules/
 database.sqlite
+.replit
