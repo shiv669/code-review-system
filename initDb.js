@@ -16,3 +16,21 @@ async function init(){
 }
 
 init();
+
+async function reviewinit() {
+  await db.exec(
+    `
+    create table if not exists review_session(
+    session_id integer primary key autoincrement,
+    author_id integer not null,
+    status text not null check(status in ('open','closed')),
+    created_at datetime not null default current_timestamp,
+    closed_at datetime,
+
+    foreign key(author_id) references users(id)
+    );
+    `
+  );
+}
+
+reviewinit();
