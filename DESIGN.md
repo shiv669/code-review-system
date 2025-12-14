@@ -1,82 +1,163 @@
 # Design Notes and Learnings
 
-This document describes how the system design evolved during development, the mistakes made early on, and how those mistakes were corrected. The goal of this project was not speed or feature count, but understanding how real code review systems are structured.
+This document captures the real design journey of the project. It intentionally documents incorrect assumptions, flawed reasoning, syntax mistakes, and how each of them was corrected. The purpose of this project was not to build a large system quickly, but to understand how a real code review workflow should be modeled, implemented, and enforced in a backend system.
 
-## Initial Design Mistakes
+The final design is the result of multiple iterations, failures, and corrections.
 
-The first database schema design mixed responsibilities across tables.
+---
 
-Initially, there were separate tables for authors and reviewers, and login related tables were also considered. This created unnecessary duplication and confusion. Roles were treated as identities instead of capabilities.
+## Early Conceptual Mistakes
 
-Another early mistake was attempting to store code and review data in a single table. This approach made it unclear how code history should be preserved and how comments would remain meaningful after changes.
+### Treating Roles as Separate Identities
 
-These designs would have led to overwritten history and ambiguous ownership.
+The earliest design attempted to separate authors and reviewers into different tables, along with ideas for separate login tables. This approach was fundamentally flawed.
 
-## Correction and Key Design Decisions
+The mistake was thinking of roles as identities instead of capabilities. In reality, a person can be an author in one context and a reviewer in another. Treating them as separate entities caused duplication, unclear ownership, and unnecessary complexity.
 
-### Single Users Table
+This was corrected by introducing a single users table where roles are represented as capability flags rather than separate identities. Ownership is always explicit and stored via foreign keys, never inferred from role flags.
 
-The first major correction was consolidating all people into a single users table. A user can act as an author, reviewer, or both depending on context. Capability flags exist only to control permissions, not ownership.
+---
 
-Ownership is always explicit and stored using foreign keys, never inferred from role flags.
+### Trying to Combine Code and Reviews in One Table
 
-### Review Sessions as First Class Entities
+Another early mistake was attempting to store code, reviews, and feedback in a single table. While this looked simpler at first, it quickly became clear that this approach destroys history.
 
-A review session represents one complete review process started by an author. It is not tied to a single code snapshot or a reviewer.
+If code is updated in place, existing comments and feedback lose their meaning. There is no longer a guarantee that a comment refers to the version of code it was written for.
 
-The session exists independently and owns the lifecycle of the review. It starts when the author creates it and ends only when the author explicitly closes it.
+This mistake forced a re-evaluation of how real review systems preserve context.
 
-This separation avoids fragmenting review history and matches real world workflows.
+---
+
+## Core Design Corrections
+
+### Review Sessions as First-Class State
+
+The introduction of the review_sessions table was a major conceptual correction.
+
+A review session represents the entire lifecycle of a review initiated by an author. It is not tied to a single code snapshot or a single reviewer. It exists independently and owns the review’s state.
+
+A session has exactly two states: open and closed.  
+Only the author can close a session.  
+Once closed, no further revisions or comments are allowed.
+
+This explicit lifecycle prevents ambiguous behavior and makes the system state-driven instead of intention-driven.
+
+---
 
 ### Revisions as Immutable Snapshots
 
-Initially, updating code in place seemed simpler. This was corrected after realizing that updating code would invalidate existing feedback.
+Initially, updating code directly felt intuitive. This was wrong.
 
-Revisions were introduced as immutable snapshots of code. Each revision belongs to exactly one review session. Once created, a revision never changes.
+The key realization was that immutability is essential in collaborative systems. Once feedback is given, the code it refers to must never change.
 
-All comments attach to a specific revision, which guarantees that feedback always refers to the correct version of code.
+Revisions were introduced as immutable snapshots. Each revision:
+- belongs to exactly one review session
+- has a strictly increasing revision number per session
+- is never updated or deleted
 
-### Comments Tied to Revisions
+Revision numbers are derived by the backend from existing state, never provided by the client. This avoids race conditions and enforces correctness at the system level.
 
-Comments are written by users and always reference a specific revision. They may optionally reference a line number but are never moved when new revisions are created.
+---
 
-This design ensures that older comments remain accurate even as the code evolves.
+### Comments Bound to Revisions, Not Sessions
 
-## Final Data Model Overview
+Another incorrect assumption was that comments could belong directly to sessions. This breaks down once multiple revisions exist.
 
-The final schema consists of four core tables.
+Comments were correctly modeled as immutable annotations tied to a specific revision. Optionally, a comment may reference a line number, but it always belongs to one snapshot of code.
 
-Users store identity and capability information.
+This ensures that comments remain accurate even after new revisions are created.
 
-Review sessions store ownership and lifecycle state.
+---
 
-Revisions store immutable snapshots of code.
+## Backend Logic and State Enforcement
 
-Comments store feedback linked to specific revisions.
+### Avoiding Database Errors as Business Logic
 
-The dependency order is strictly enforced:
+An early mistake was relying on database constraints (such as foreign key failures) to implicitly enforce business rules.
+
+This approach was corrected by explicitly querying and validating system state in the backend before performing mutations. The backend now deliberately checks:
+- whether a session exists
+- whether it is open or closed
+- whether a revision exists
+- whether new actions are allowed
+
+Database constraints are used for integrity, not control flow.
+
+---
+
+### Syntax and Async Errors During Development
+
+Several implementation mistakes were made and corrected:
+- forgetting to mark route handlers as async
+- forgetting to await database operations
+- using db.all instead of db.run for insert operations
+- writing malformed SQL queries (missing parentheses, incorrect aliasing)
+- mixing SQL strings and parameter arrays incorrectly
+
+These errors reinforced the importance of understanding asynchronous control flow and the exact behavior of database APIs, rather than copying patterns blindly.
+
+---
+
+## Endpoint Evolution
+
+Each endpoint was designed incrementally and validated through real requests.
+
+### Creating a Review Session
+
+A session can only be created if the author exists. The backend returns the created session’s identifier and does not rely on confirmation messages.
+
+---
+
+### Adding Revisions
+
+Revisions are created only if the session exists and is open. The revision number is derived from existing revisions. This endpoint enforced immutability and state-based transitions.
+
+---
+
+### Adding Comments
+
+Comments can only be added to existing revisions whose parent session is open. Comments are insert-only and never edited or deleted.
+
+This ensured that feedback remains historically accurate.
+
+---
+
+## Final Data Model
+
+The final system consists of four core tables with strict dependency order:
+
+- users
+- review_sessions
+- revisions
+- comments
+
+Dependencies flow in one direction only:
+
 users → review_sessions → revisions → comments
 
-## Git and Development Workflow Learnings
+This structure makes invalid states difficult to represent and valid states easy to reason about.
 
-The project was developed incrementally and pushed to Git early. Initial mistakes included committing local database files and editor configuration files.
+---
 
-These mistakes were corrected by properly using a gitignore file and committing fixes transparently.
+## Tooling and Workflow Learnings
 
-Git authentication issues were encountered and resolved using modern token based authentication. This reinforced the importance of understanding tooling, not just writing code.
+The project was committed incrementally to Git to reflect learning rather than presenting a polished history.
 
-Commit history was kept incremental to reflect learning and iteration rather than presenting a finished project all at once.
+Mistakes included:
+- committing local database files
+- committing editor configuration files
+- git authentication issues
+
+These were corrected transparently using proper gitignore usage and token-based authentication. The commit history reflects real iteration rather than artificial cleanliness.
+
+---
 
 ## Key Learnings
 
-Clear separation of responsibility in data models prevents ambiguity later.
+- clear data modeling prevents entire classes of bugs later
+- immutability preserves meaning in collaborative systems
+- backend systems should be state-driven, not intention-driven
+- APIs should return state, not success messages
+- explicit logic in code is preferable to implicit behavior in databases
 
-Immutability is essential for preserving context in collaborative systems.
-
-Ownership must always be explicit and never inferred.
-
-Systems should rely on explicit state changes rather than interpreting human intent.
-
-Clean tooling practices matter, but design clarity matters more.
-
-This project reinforced that good system design is about making correct concepts obvious and mistakes difficult, not about adding features or complexity.
+Most importantly, good system design is not about adding features, but about making incorrect behavior impossible and correct behavior obvious.
