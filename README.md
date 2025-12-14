@@ -1,63 +1,136 @@
 # Code Review System
 
-This project explores how code review systems work at a fundamental level. The goal is to understand how teams reason about code changes, feedback, and history rather than to build a feature rich platform.
+This project is a minimal backend implementation of a code review workflow.  
+It focuses on **how code review systems preserve context over time**, rather than on UI, automation, or feature count.
+
+The goal of the project was to understand how real review systems model state, history, and feedback in a way that avoids ambiguity as code evolves.
+
+---
 
 ## Motivation
 
-While learning software engineering, I noticed that many projects focus on building features without thinking deeply about how code is reviewed and changed over time. I built this project to understand how review workflows preserve context and how design choices affect collaboration.
+While learning software engineering, I noticed that many projects emphasize features without addressing how teams actually reason about code changes and feedback.
 
-## What the system does
+Code review is fundamentally about **preserving meaning over time**:
+- feedback should always refer to the exact version of code it was written for
+- history should never be overwritten
+- system state should be explicit, not implied
 
-An author can submit a piece of code for review.
+This project was built to explore those ideas from first principles.
 
-Each time the code changes, a new snapshot is created instead of modifying the previous one.
+---
 
-Reviewers can leave feedback that refers to a specific version of the code and specific lines.
+## Core Workflow
 
-Older versions and comments are kept so that past feedback never becomes confusing or misleading.
+The system models a simple but realistic review lifecycle:
 
-## Key ideas explored
+1. An author creates a review session
+2. The author submits code as immutable revisions
+3. Reviewers add comments tied to specific revisions and optional line numbers
+4. The author closes the session when review is complete
+5. No further changes are allowed after closure
 
-The project focuses on treating code versions as immutable records.
+All actions are validated against system state to prevent invalid transitions.
 
-Feedback is always tied to the exact version of code it refers to.
+---
 
-Users are modeled as a single entity that can act as an author or reviewer depending on context.
+## Key Design Principles
 
-The system is built as a simple monolithic application to avoid unnecessary complexity.
+### Immutability
 
-## Design choices
+Code is never updated in place.  
+Each change creates a new revision that permanently preserves the previous state.
 
-Code is never updated in place because changing old code would break the meaning of existing feedback.
+This ensures that comments and feedback always remain meaningful.
 
-Automation and real time editing are intentionally avoided so the focus stays on data modeling and system behavior.
+---
 
-SQLite is used to keep setup simple while still working with a relational schema that could be moved to another database later.
+### Explicit State
 
-## Current progress
+Review sessions have a clearly defined lifecycle:
+- open
+- closed
 
-The database schema is implemented.
+All backend logic checks state explicitly before allowing mutations.  
+The system does not rely on assumptions or inferred intent.
 
-User creation and querying are working.
+---
 
-Basic data flow between the application and the database is in place.
+### Contextual Feedback
 
-## What I am learning
+Comments are attached to **revisions**, not sessions.  
+This guarantees that feedback always refers to a specific snapshot of code.
 
-How relational data models represent real world workflows.
+Older comments are never moved or reinterpreted when new revisions are created.
 
-Why preserving history matters in collaborative systems.
+---
 
-How small design decisions affect clarity and correctness over time.
+### Clear Ownership
 
-## Next steps
+Users are modeled as a single entity.  
+A user can act as an author or reviewer depending on context.
 
-Add review session support.
+Ownership and relationships are always explicit through foreign keys.
 
-Add immutable code revisions.
+---
 
-Add line based review comments.
+## Technical Overview
 
-Improve validation and error handling.
+- **Backend**: Node.js with Express
+- **Database**: SQLite (relational schema, portable by design)
+- **Architecture**: Monolithic backend focused on clarity
+- **State Management**: Backend-enforced, not client-assumed
 
-This project is part of my learning process and is being built incrementally with a focus on understanding rather than completeness.  
+The project intentionally avoids:
+- authentication
+- real-time collaboration
+- automation
+- AI assistance
+
+This keeps the focus on system behavior and data modeling.
+
+---
+
+## What This Project Demonstrates
+
+- Designing state-driven backend systems
+- Modeling immutable history correctly
+- Using relational data to preserve context
+- Enforcing business rules explicitly in code
+- Translating real-world workflows into schemas and APIs
+
+---
+
+## Development Approach
+
+The project was built incrementally, with frequent validation and iteration.
+
+Mistakes were made intentionally visible in the design process, including:
+- incorrect early schemas
+- misuse of database constraints
+- async and SQL syntax errors
+
+Each mistake informed a clearer and more correct design.
+
+A detailed explanation of these decisions and corrections is documented in `DESIGN.md`.
+
+---
+
+## Status
+
+The core system is complete:
+- review sessions
+- immutable revisions
+- revision-scoped comments
+- explicit session closure
+
+The project is intentionally frozen at this stage to preserve clarity and correctness.
+
+---
+
+## Purpose
+
+This repository represents a learning-focused system design exercise.  
+It prioritizes understanding over completeness and correctness over scale.
+
+The goal was not to build a production platform, but to deeply understand how one *should* be structured.
