@@ -86,6 +86,56 @@ app.post("/sessions/:id/revisions", async (req, res) => {
   }
 });
 
+app.post("/revisions/:id/comments", async (req, res) =>{
+  try{
+    const revision_id = req.params.id;
+    const { user_id, content, line_number } = req.body;
+    if(!content){
+      return res.status(400).json({
+        error: "a comment is required"
+      });
+    }
+    const revision = await db.get(
+      "select * from revisions where id = ?",
+      [revision_id]
+    );
+
+    if(!revision){
+      return res.status(404).json({
+        error: "revision not found"
+      });
+    }
+
+    const session = await db.get(
+      "select status from review_sessions where id = ?",
+      [revision.review_session_id]
+    )
+
+    if(session.status === "closed"){
+      res.status(409).json({
+        error: "session is closed"
+      });
+    }
+
+    const result = db.run(
+      `
+      insert into comments(revision_id, user_id, line_number, content)
+      values(?,?,?,?)
+      `,
+      [revision_id, user_id, line_number ?? null, content]
+    );
+
+    res.status(201).json({
+      comment_id: result.lastID
+    });
+    
+  }catch (error){
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
 app.listen(3000, ()=> {
   console.log("server is running");
 });
