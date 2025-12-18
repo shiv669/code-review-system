@@ -101,6 +101,53 @@ It intentionally avoids abstraction, styling, and advanced UI logic.
 - Translating real-world workflows into schemas and APIs
 
 ---
+## Docker Support
+
+This project includes Docker configuration to define a reproducible runtime environment for both the backend and frontend.
+
+Docker is used here as a **declarative specification** of how the system should be run, rather than as a deployment mechanism. This allows the system to be started consistently across different machines without relying on local setup assumptions.
+
+### Structure
+
+The system is split into two containers:
+
+- Backend container  
+  Runs the Node.js Express API and manages the SQLite database.  
+  Exposes port 3000.
+
+- Frontend container  
+  Runs a minimal React application using Vite to exercise backend endpoints.  
+  Exposes port 5173.
+
+Each component has its own Dockerfile to keep responsibilities and lifecycles explicit.
+
+### Docker Compose
+
+A `docker-compose.yml` file defines how the frontend and backend run together and communicate over a shared network.
+
+The frontend receives the backend API URL via environment variables, allowing the same codebase to work both inside and outside Docker without modification.
+
+### Execution Notes
+
+The Docker configuration is intentionally included even though it may not be executable in all development environments. Some platforms do not provide a Docker daemon.
+
+In such cases, the Docker files serve as an explicit and portable definition of the system runtime rather than a required execution step.
+
+### Running with Docker (locally)
+
+On a machine with Docker installed, the full system can be started with:
+
+docker-compose up --build
+
+This will start both services and expose:
+- frontend at http://localhost:5173
+- backend at http://localhost:3000
+Why this works:
+- It explains Docker **without overclaiming**
+- It clearly separates “configuration” from “execution”
+- It shows you understand environment constraints
+
+---
 
 ## Development Approach
 

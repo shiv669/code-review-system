@@ -199,6 +199,60 @@ These were corrected transparently using proper gitignore usage, token-based aut
 
 ---
 
+## Docker and Environment Design Decisions
+
+Docker was introduced late in the project to formalize runtime assumptions and system boundaries.
+
+The goal was not deployment or optimization, but **reproducibility and clarity**.
+
+---
+
+### Separate Containers for Frontend and Backend
+
+The frontend and backend are dockerized as separate services.
+
+This reflects the fact that they are independent programs with different responsibilities, lifecycles, and runtime concerns. Combining them into a single container would obscure these boundaries and reduce clarity.
+
+Each Dockerfile defines exactly one responsibility:
+- the backend container runs the API server
+- the frontend container runs the UI used to exercise backend behavior
+
+---
+
+### Environment Configuration via Docker Compose
+
+Docker Compose is used to define how services communicate.
+
+Instead of hardcoding API URLs, the frontend receives the backend address through environment variables. This mirrors how real systems adapt behavior across environments without code changes.
+
+Within Docker, services communicate using service names rather than localhost. This reinforces a correct mental model of distributed systems and network boundaries.
+
+---
+
+### Docker as Specification, Not Deployment
+
+The Docker configuration is treated as a declarative specification rather than a mandatory execution environment.
+
+In environments where Docker execution is not available, the configuration still serves important purposes:
+- documenting runtime assumptions
+- defining startup commands
+- making environment dependencies explicit
+
+This approach prioritizes correctness and understanding over forced execution.
+
+---
+
+### Key Insight
+
+Introducing Docker clarified the distinction between:
+- application logic
+- runtime environment
+- deployment constraints
+
+This reinforced the importance of separating concerns and designing systems that remain understandable even when execution environments vary.
+
+---
+
 ## Key Learnings
 
 - clear data modeling prevents entire classes of bugs
