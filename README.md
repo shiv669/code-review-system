@@ -1,9 +1,9 @@
 # Code Review System
 
-This project is a minimal backend implementation of a code review workflow.  
-It focuses on **how code review systems preserve context over time**, rather than on UI, automation, or feature count.
+This project is a minimal end-to-end implementation of a code review workflow.  
+It focuses on **how review systems preserve context over time**, rather than on UI polish, automation, or feature count.
 
-The goal of the project was to understand how real review systems model state, history, and feedback in a way that avoids ambiguity as code evolves.
+The goal of the project is to understand how real review systems model state, history, and feedback in a way that avoids ambiguity as code evolves.
 
 ---
 
@@ -30,7 +30,7 @@ The system models a simple but realistic review lifecycle:
 4. The author closes the session when review is complete
 5. No further changes are allowed after closure
 
-All actions are validated against system state to prevent invalid transitions.
+All actions are validated against explicit system state to prevent invalid transitions.
 
 ---
 
@@ -52,7 +52,7 @@ Review sessions have a clearly defined lifecycle:
 - closed
 
 All backend logic checks state explicitly before allowing mutations.  
-The system does not rely on assumptions or inferred intent.
+The system does not rely on inferred intent or client assumptions.
 
 ---
 
@@ -78,16 +78,16 @@ Ownership and relationships are always explicit through foreign keys.
 
 - **Backend**: Node.js with Express
 - **Database**: SQLite (relational schema, portable by design)
-- **Architecture**: Monolithic backend focused on clarity
-- **State Management**: Backend-enforced, not client-assumed
+- **Frontend**: Minimal React application (Vite)
+- **Architecture**: Monolithic, clarity-first design
+- **State Management**: Enforced entirely by the backend
 
-The project intentionally avoids:
-- authentication
-- real-time collaboration
-- automation
-- AI assistance
+The frontend exists only to:
+- exercise backend endpoints
+- demonstrate the full review lifecycle
+- display raw backend responses
 
-This keeps the focus on system behavior and data modeling.
+It intentionally avoids abstraction, styling, and advanced UI logic.
 
 ---
 
@@ -97,6 +97,7 @@ This keeps the focus on system behavior and data modeling.
 - Modeling immutable history correctly
 - Using relational data to preserve context
 - Enforcing business rules explicitly in code
+- Connecting a minimal frontend to a validated backend
 - Translating real-world workflows into schemas and APIs
 
 ---
@@ -105,10 +106,11 @@ This keeps the focus on system behavior and data modeling.
 
 The project was built incrementally, with frequent validation and iteration.
 
-Mistakes were made intentionally visible in the design process, including:
+Mistakes were intentionally left visible during development, including:
 - incorrect early schemas
-- misuse of database constraints
-- async and SQL syntax errors
+- table and column mismatches
+- async and SQL usage errors
+- environment and deployment assumptions
 
 Each mistake informed a clearer and more correct design.
 
@@ -123,6 +125,7 @@ The core system is complete:
 - immutable revisions
 - revision-scoped comments
 - explicit session closure
+- minimal frontend to demonstrate system flow
 
 The project is intentionally frozen at this stage to preserve clarity and correctness.
 

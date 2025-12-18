@@ -1,6 +1,8 @@
 # Design Notes and Learnings
 
-This document captures the real design journey of the project. It intentionally documents incorrect assumptions, flawed reasoning, syntax mistakes, and how each of them was corrected. The purpose of this project was not to build a large system quickly, but to understand how a real code review workflow should be modeled, implemented, and enforced in a backend system.
+This document captures the real design journey of the project. It intentionally documents incorrect assumptions, flawed reasoning, syntax mistakes, integration errors, and how each of them was corrected.
+
+The purpose of this project was not to build a large system quickly, but to understand how a real code review workflow should be modeled, implemented, enforced, and exercised end to end.
 
 The final design is the result of multiple iterations, failures, and corrections.
 
@@ -36,7 +38,10 @@ The introduction of the review_sessions table was a major conceptual correction.
 
 A review session represents the entire lifecycle of a review initiated by an author. It is not tied to a single code snapshot or a single reviewer. It exists independently and owns the review’s state.
 
-A session has exactly two states: open and closed.  
+A session has exactly two states:
+- open
+- closed
+
 Only the author can close a session.  
 Once closed, no further revisions or comments are allowed.
 
@@ -73,9 +78,9 @@ This ensures that comments remain accurate even after new revisions are created.
 
 ### Avoiding Database Errors as Business Logic
 
-An early mistake was relying on database constraints (such as foreign key failures) to implicitly enforce business rules.
+An early mistake was relying on database constraint failures to implicitly enforce business rules.
 
-This approach was corrected by explicitly querying and validating system state in the backend before performing mutations. The backend now deliberately checks:
+This approach was corrected by explicitly querying and validating system state in the backend before performing mutations. The backend deliberately checks:
 - whether a session exists
 - whether it is open or closed
 - whether a revision exists
@@ -91,26 +96,27 @@ Several implementation mistakes were made and corrected:
 - forgetting to mark route handlers as async
 - forgetting to await database operations
 - using db.all instead of db.run for insert operations
-- writing malformed SQL queries (missing parentheses, incorrect aliasing)
-- mixing SQL strings and parameter arrays incorrectly
+- writing malformed SQL queries
+- mismatching table and column names across files
+- missing return statements after error responses
 
-These errors reinforced the importance of understanding asynchronous control flow and the exact behavior of database APIs, rather than copying patterns blindly.
+These errors reinforced the importance of understanding asynchronous control flow and database APIs instead of copying patterns mechanically.
 
 ---
 
 ## Endpoint Evolution
 
-Each endpoint was designed incrementally and validated through real requests.
+Each endpoint was designed incrementally and validated through real HTTP requests.
 
 ### Creating a Review Session
 
-A session can only be created if the author exists. The backend returns the created session’s identifier and does not rely on confirmation messages.
+A session can only be created if the author exists. The backend returns the created session identifier and does not rely on success messages.
 
 ---
 
 ### Adding Revisions
 
-Revisions are created only if the session exists and is open. The revision number is derived from existing revisions. This endpoint enforced immutability and state-based transitions.
+Revisions are created only if the session exists and is open. The revision number is derived from existing revisions. This endpoint enforces immutability and state-based transitions.
 
 ---
 
@@ -118,7 +124,47 @@ Revisions are created only if the session exists and is open. The revision numbe
 
 Comments can only be added to existing revisions whose parent session is open. Comments are insert-only and never edited or deleted.
 
-This ensured that feedback remains historically accurate.
+This ensures that feedback remains historically accurate.
+
+---
+
+## Frontend Integration Learnings
+
+A minimal React frontend was added late in the project to exercise backend endpoints and visualize the review lifecycle.
+
+### Initial Frontend Assumptions
+
+Early frontend attempts failed due to incorrect assumptions:
+- assuming localhost URLs would work unchanged on Replit
+- forgetting that browsers enforce CORS
+- not handling non-JSON error responses
+- assuming backend tables existed without running initialization scripts
+
+These issues initially appeared as “frontend bugs” but were actually integration and environment problems.
+
+---
+
+### Environment and Deployment Corrections
+
+Several key corrections were made:
+- explicitly enabling CORS in the backend
+- aligning frontend API URLs with Replit’s public backend URL
+- removing trailing slashes that caused route mismatches
+- understanding that deleting a SQLite file deletes the entire schema
+- explicitly running initDb.js to create tables before starting the server
+
+This reinforced the distinction between local development assumptions and deployed environments.
+
+---
+
+### Frontend Scope Deliberately Limited
+
+The frontend was intentionally kept minimal:
+- no authentication
+- no UI validation
+- no derived state or client-side rules
+
+All business logic remains in the backend. The frontend acts only as a thin interface to exercise system behavior and display raw backend responses.
 
 ---
 
@@ -146,18 +192,20 @@ The project was committed incrementally to Git to reflect learning rather than p
 Mistakes included:
 - committing local database files
 - committing editor configuration files
-- git authentication issues
+- git authentication and identity issues
+- rebasing mistakes during cleanup
 
-These were corrected transparently using proper gitignore usage and token-based authentication. The commit history reflects real iteration rather than artificial cleanliness.
+These were corrected transparently using proper gitignore usage, token-based authentication, and history cleanup. The commit history reflects real iteration rather than artificial cleanliness.
 
 ---
 
 ## Key Learnings
 
-- clear data modeling prevents entire classes of bugs later
+- clear data modeling prevents entire classes of bugs
 - immutability preserves meaning in collaborative systems
 - backend systems should be state-driven, not intention-driven
 - APIs should return state, not success messages
+- frontend bugs often originate from backend or environment mismatches
 - explicit logic in code is preferable to implicit behavior in databases
 
 Most importantly, good system design is not about adding features, but about making incorrect behavior impossible and correct behavior obvious.
