@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const API = "https://b0f3713b-8529-405f-9355-6dcc12b6e7fd-00-263pxhsc8m6nb.pike.replit.dev";
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 function App() {
   // input state
