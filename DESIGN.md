@@ -191,7 +191,7 @@ The diagram below provides a visual overview of the final system design and how 
 
 It highlights the strict ownership and dependency order between entities, the immutability of revisions, and how all feedback remains permanently tied to the exact code snapshot it refers to.
 
-![Data flow and entity relationship diagram](./design-flow.png)
+![Data flow and entity relationship diagram](design-flow.png)
 
 ---
 
