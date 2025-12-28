@@ -185,6 +185,16 @@ This structure makes invalid states difficult to represent and valid states easy
 
 ---
 
+## Data Flow and Entity Relationships
+
+The diagram below provides a visual overview of the final system design and how data flows through the backend.
+
+It highlights the strict ownership and dependency order between entities, the immutability of revisions, and how all feedback remains permanently tied to the exact code snapshot it refers to.
+
+![Data flow and entity relationship diagram](./design-flow.png)
+
+---
+
 ## Tooling and Workflow Learnings
 
 The project was committed incrementally to Git to reflect learning rather than presenting a polished history.
